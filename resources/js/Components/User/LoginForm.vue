@@ -29,45 +29,62 @@ function submitForm() {
 </script>
 
 <template>
-<!-- component -->
-<div class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-  <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-    <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center">Sign In</h2>
-
-    <form @submit.prevent="submitForm" class="space-y-4">
+<div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.16),_transparent_30%),linear-gradient(180deg,_#fffdf8_0%,_#f8fafc_100%)] flex items-center justify-center p-4">
+  <div class="w-full max-w-5xl overflow-hidden rounded-[32px] border border-white/70 bg-white/90 shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur md:grid md:grid-cols-2">
+    <div class="hidden flex-col justify-between bg-gradient-to-br from-amber-500 to-orange-700 p-10 text-white md:flex">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-        <input v-model="form.email"
-          type="email"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-        />
+        <p class="text-xs font-semibold uppercase tracking-[0.35em] text-white/75">City Bakeware Trade</p>
+        <h1 class="mt-4 text-4xl font-black leading-tight">Fast, clean billing for bakery raw materials.</h1>
+        <p class="mt-4 max-w-md text-white/80">Designed for a wholesale and retail bakery supply counter with quick sale flow, stock visibility, and a professional checkout experience.</p>
+      </div>
+      <div class="rounded-3xl bg-white/10 p-5 text-sm text-white/85 backdrop-blur">
+        Baker-friendly POS interface built for speed, clarity, and low-friction checkout.
+      </div>
+    </div>
+
+    <div class="p-6 md:p-10">
+      <div class="mb-8 flex items-center gap-3 md:hidden">
+        <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-lg shadow-amber-500/30">
+          <span class="material-icons">bakery_dining</span>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-700">City Bakeware Trade</p>
+          <p class="text-sm text-slate-500">Bakery supply POS</p>
+        </div>
       </div>
 
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-        <input v-model="form.password"
-          type="password"
-          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-
-        />
+      <div class="mb-6">
+        <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-700">Welcome back</p>
+        <h2 class="mt-2 text-3xl font-bold text-slate-900">Sign in to the POS</h2>
+        <p class="mt-2 text-sm text-slate-500">Use your staff account to continue the sale workflow.</p>
       </div>
 
-      <div class="flex items-center justify-between">
-        <label class="flex items-center">
-          <input type="checkbox" class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
-          <span class="ml-2 text-sm text-gray-600">Remember me</span>
-        </label>
-        <Link href="/send-otp-page" class="text-sm text-indigo-600 hover:text-indigo-500">Forgot password?</Link>
+      <form @submit.prevent="submitForm" class="grid gap-4">
+        <div class="grid gap-2">
+          <label class="text-sm font-semibold text-slate-700">Email</label>
+          <input v-model="form.email" type="email" class="pos-input" />
+        </div>
+
+        <div class="grid gap-2">
+          <label class="text-sm font-semibold text-slate-700">Password</label>
+          <input v-model="form.password" type="password" class="pos-input" />
+        </div>
+
+        <div class="flex items-center justify-between text-sm">
+          <label class="flex items-center gap-2 text-slate-600">
+            <input type="checkbox" class="rounded border-slate-300 text-amber-600 focus:ring-amber-200"/>
+            Remember me
+          </label>
+          <Link href="/send-otp-page" class="font-semibold text-amber-700 hover:text-amber-800">Forgot password?</Link>
+        </div>
+
+        <button type="submit" class="pos-button-primary w-full">Sign In</button>
+      </form>
+
+      <div class="mt-6 text-center text-sm text-slate-600">
+        Don't have an account?
+        <Link href="/registration-page" class="font-semibold text-amber-700 hover:text-amber-800">Sign up</Link>
       </div>
-      
-      <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2.5 rounded-lg transition-colors">
-        Sign In
-      </button>
-    
-    </form>
-    <div class="mt-6 text-center text-sm text-gray-600">
-      Don't have an account?
-      <Link href="/registration-page" class="text-indigo-600 hover:text-indigo-500 font-medium">Sign up</Link>
     </div>
   </div>
 </div>

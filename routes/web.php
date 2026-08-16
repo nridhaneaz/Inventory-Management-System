@@ -71,6 +71,7 @@ Route::middleware([SessionAuthenticateMiddleware::class])->group(function () {
 
     // Invoice Routes
     Route::post('/create-invoice', [InvoiceController::class, 'createInvoice'])->name('createInvoice');
+    Route::post('/update-invoice-status', [InvoiceController::class, 'updateInvoiceStatus'])->name('updateInvoiceStatus');
     Route::get('/delete-invoice', [InvoiceController::class, 'deleteInvoice'])->name('deleteInvoice');
 });
 

@@ -1,123 +1,38 @@
 <script setup>
-import { ref } from "vue";
+import CashMemo from './CashMemo.vue';
+import { usePage } from '@inertiajs/vue3';
+import { printCashMemo } from '../../utils/printCashMemo';
+
 const props = defineProps({
     show: Boolean,
     customer: Object,
 });
 
-const emit = defineEmits(["update:show"]);
+const emit = defineEmits(['update:show']);
+const page = usePage();
+
+const business = page.props.business || {};
 
 const printInvoice = () => {
-    const printContent = document.getElementById("print-invoice").innerHTML;
-
-    const printDiv = document.createElement("div");
-    printDiv.innerHTML = printContent;
-
-    printDiv.style.position = "absolute";
-    printDiv.style.top = "0";
-    printDiv.style.left = "0";
-    printDiv.style.right = "0";
-    printDiv.style.bottom = "0";
-    printDiv.style.height = "100%";
-    printDiv.style.width = "100%";
-    printDiv.style.backgroundColor = "white";
-    printDiv.style.zIndex = "9999";
-    document.body.appendChild(printDiv);
-    window.print();
-
-    document.body.removeChild(printDiv);
+    printCashMemo('invoice-cash-memo-print');
 };
 </script>
 
 <template>
     <div
-        v-if="show"
-        class="fixed inset-0 flex justify-center items-center bg-gray-500 bg-opacity-50 z-50"
+        v-if="show && customer"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm invoice-preview-modal"
     >
-        <div
-            class="bg-white border rounded-lg shadow-lg p-3 flex basis-auto w-1/2"
-        >
-            <div class="w-full">
-                <div id="print-invoice">
-                    <div class="text-center mb-2">
-                        <h1 class="text-xl font-bold">ShoppingBox</h1>
-                        <p class="text-gray-700">+123 456 7890</p>
-                        <p class="text-gray-700">123 Shopping Street, City, Country</p>
-                    </div>
-                    <div class="flex justify-end">
-                        <div class="text-gray-700">
-                            <div>
-                               {{ new Date(props.customer.created_at).toLocaleDateString('en-CA') }}
+        <div class="w-full max-w-4xl rounded-[28px] border border-white/60 bg-white p-4 shadow-[0_30px_80px_rgba(15,23,42,0.22)] md:p-6">
+            <CashMemo :invoice="customer" :business="business" print-id="invoice-cash-memo-print" />
 
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <h2 class="text-lg font-bold mb-4">Bill To:</h2>
-                        <p class="text-gray-700 mb-2 font-bold">
-                            Name: {{ props.customer.customer.name }}
-                        </p>
-                        <p class="text-gray-700 font-bold">
-                            Email: {{ props.customer.customer.email }}
-                        </p>
-                        <p class="text-gray-700 font-bold">
-                            User Id: {{ props.customer.customer.id }}
-                        </p>
-                    </div>
-                    
-                    <div class="mt-6 mb-4"></div>
-                    
-                    <table class="w-full">
-                        <thead>
-                            <tr>
-                                <th>Item</th>
-                                <th>Name</th>
-                                <th>Qty</th>
-                                <th>Price</th>
-                                <th>Total</th>
-                            </tr>
-                            <tr
-                                class="text-center"
-                                v-for="(product, index) in props.customer
-                                    .invoice_products"
-                                :key="index"
-                            >
-                                <td>{{ index + 1 }}</td>
-                                <td>{{ product.product.name }}</td>
-                                <td>{{ product.qty }}</td>
-                                <td>{{ product.product.price }}</td>
-                                <td>{{ product.sale_price }}</td>
-                            </tr>
-                        </thead>
-                        <tbody id="invoiceProduct"></tbody>
-                    </table>
-                    <div class="mt-6">
-                        <p class="font-bold">
-                            Total: {{ props.customer.total }}
-                        </p>
-                        <p class="font-bold">
-                            Payable: {{ props.customer.payable }}
-                        </p>
-                        <p class="font-bold">Vat: {{ props.customer.vat }}</p>
-                        <p class="font-bold">
-                            Discount: {{ props.customer.discount }}
-                        </p>
-                    </div>
-                </div>
-                <div class="w-full flex justify-end items-end mt-[200px]">
-                    <button
-                        @click="$emit('update:show', false)"
-                        class="bg-red-500 text-white m-2 px-4 py-2 rounded-md hover:bg-red-600"
-                    >
-                        Close
-                    </button>
-                    <button
-                        @click="[printInvoice(), $emit('update:show', false)]"
-                        class="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 m-2"
-                    >
-                        Print
-                    </button>
-                </div>
+            <div class="mt-5 flex items-center justify-end gap-3 no-print">
+                <button type="button" class="pos-button-danger" @click="$emit('update:show', false)">
+                    Close
+                </button>
+                <button type="button" class="pos-button-primary" @click="printInvoice">
+                    Print Invoice
+                </button>
             </div>
         </div>
     </div>

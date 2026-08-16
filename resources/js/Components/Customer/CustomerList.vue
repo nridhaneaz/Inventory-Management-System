@@ -1,8 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import { Link,usePage,useForm, router } from "@inertiajs/vue3";
-import { createToaster } from "@meforma/vue-toaster";
-const toaster = createToaster({ });
+import { Link, usePage, router } from "@inertiajs/vue3";
 
 const page = usePage();
 const searchValue = ref();
@@ -10,8 +8,10 @@ const searchField = ref(["name", "price"]);
 const headers = [
     { text: "No", value: "id" },
     { text: "Name", value: "name" },
-    { text: "Mobile", value: "mobile"},
-    { text: "Email", value: "email"},
+    { text: "Mobile", value: "mobile" },
+    { text: "Email", value: "email" },
+    { text: "Address", value: "address" },
+    { text: "Balance Due", value: "balance_due" },
     { text: "Action", value: "action" },
 ];
 
@@ -20,47 +20,52 @@ const items = ref(page.props.customers);
 const deleteCustomer = (id) => {
     if (confirm("Are you sure you want to delete this customer?")) {
         router.get(`/delete-customer?id=${id}`);
-        toaster.success("Customer deleted successfully");
     }
 };
 </script>
 
 <template>
-    <div class="p-4 bg-[#f8f8f8]">
-        <input
-            v-model="searchValue"
-            type="text"
-            class="mb-2 px-2 py-1 w-[300px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-            placeholder="Search...."
-        />
-        <EasyDataTable
-            buttons-pagination
-            alternating
-            :headers="headers"
-            :items="items"
-            :search-value="searchValue"
-            :search-field="searchField"
-            :rows-per-page="5"
-        >
-            <template #item-action="{ id }">
-                <Link
-                    :href="`/customer-save-page?id=${id}`"
-                    class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
-                >
-                    Edit
+    <div class="pos-page">
+        <section class="pos-section">
+            <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Customer Management</h1>
+                    <p class="text-sm text-slate-500">Manage bakery customers and billing contacts.</p>
+                </div>
+                <Link :href="`/customer-save-page?id=${0}`" class="pos-button-primary">
+                    <span class="material-icons text-[18px]">person_add</span>
+                    Create Customer
                 </Link>
-                <button
-                    @click="deleteCustomer(id)"
-                    class="bg-red-500 ml-1 text-white font-bold py-2 px-4 rounded"
-                >
-                    Delete
-                </button>
-            </template>
+            </div>
 
-        </EasyDataTable>
-        <div class="mt-4">
-            <Link :href="`/customer-save-page?id=${0}`" class="bg-orange-600 hover:bg-orange-700 text-white font-bold py-2 px-4 rounded">Create</Link>
-        </div>
+            <input
+                v-model="searchValue"
+                type="text"
+                class="pos-search mb-4"
+                placeholder="Search customers by name, email, or mobile"
+            />
+
+            <EasyDataTable
+                buttons-pagination
+                alternating
+                :headers="headers"
+                :items="items"
+                :search-value="searchValue"
+                :search-field="searchField"
+                :rows-per-page="5"
+            >
+                <template #item-action="{ id }">
+                    <div class="flex flex-wrap gap-2">
+                        <Link :href="`/customer-save-page?id=${id}`" class="pos-button-success px-3 py-2">
+                            Edit
+                        </Link>
+                        <button @click="deleteCustomer(id)" class="pos-button-danger px-3 py-2">
+                            Delete
+                        </button>
+                    </div>
+                </template>
+            </EasyDataTable>
+        </section>
     </div>
 </template>
 

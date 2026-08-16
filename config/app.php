@@ -67,6 +67,9 @@ return [
 
     'timezone' => env('APP_TIMEZONE', 'UTC'),
 
+    // Business reports use Bangladesh calendar days while timestamps remain in UTC.
+    'business_timezone' => env('BUSINESS_TIMEZONE', 'Asia/Dhaka'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

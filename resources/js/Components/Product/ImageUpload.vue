@@ -15,16 +15,25 @@ const imageSelected = (e) => {
 };
 </script>
 <template>
-    <div>
+    <div class="grid gap-3">
         <label
             for="image"
-            class="block relative rounded-md mt-1 h-[140px] overflow-hidden cursor-pointer border-slate-300 border"
+            class="group relative flex min-h-[220px] cursor-pointer items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-amber-200 bg-amber-50/60 transition hover:border-amber-400 hover:bg-amber-50"
         >
             <img
+                v-if="preview || productImage"
                 :src="preview ?? productImage"
-                class="object-cover object-center w-full h-full"
-                alt=""
+                class="absolute inset-0 h-full w-full object-cover object-center transition duration-300 group-hover:scale-[1.02]"
+                alt="Product preview"
             />
+            <div v-else class="flex flex-col items-center gap-2 p-6 text-center text-slate-500">
+                <span class="material-icons text-4xl text-amber-500">add_a_photo</span>
+                <p class="text-sm font-semibold text-slate-700">Upload product photo</p>
+                <p class="text-xs text-slate-500">Use a clear image for easy identification at the counter.</p>
+            </div>
+            <div class="absolute bottom-3 left-3 rounded-full bg-slate-900/75 px-3 py-1 text-xs font-semibold text-white">
+                Click to change image
+            </div>
         </label>
         <input
             @input="imageSelected($event)"

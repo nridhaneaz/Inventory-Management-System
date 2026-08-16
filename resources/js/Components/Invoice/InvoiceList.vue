@@ -1,14 +1,30 @@
 <script setup>
 import { ref } from "vue";
 import InvoiceDetails from "./InvoiceDetails.vue";
-import { Link, usePage, useForm, router } from "@inertiajs/vue3";
-import { createToaster } from "@meforma/vue-toaster";
-const toaster = createToaster({ });
+import { usePage, router } from "@inertiajs/vue3";
 const show = ref(false);
 const customer = ref();
 const page = usePage();
 const searchValue = ref();
 const searchField = ref(["customer.name"]);
+
+const markInvoicePaid = (invoice) => {
+    const nextStatus = 'paid';
+    router.post('/update-invoice-status', {
+        id: invoice.id,
+        status: nextStatus,
+    }, {
+        preserveScroll: true,
+        onSuccess: () => {
+            const target = items.value.find((item) => item.id === invoice.id);
+            if (target) {
+                target.status = nextStatus;
+                target.amount_paid = Number(invoice.payable || 0);
+                target.balance_due = 0;
+            }
+        },
+    });
+};
 const headers = [
     { text: "No", value: "id" },
     { text: "Name", value: "customer.name" },
@@ -17,7 +33,9 @@ const headers = [
     { text: "Vat", value: "vat" },
     { text: "Discount", value: "discount" },
     { text: "Payable", value: "payable" },
-    { text: "Date", value: "created_at" }, // Make sure this matches your actual date field name
+    { text: "Paid", value: "amount_paid" },
+    { text: "Due", value: "balance_due" },
+    { text: "Date", value: "created_at" },
     { text: "Action", value: "action" },
 ];
 
@@ -55,46 +73,62 @@ const deleteInvoice = (id) => {
     }
 };
 
-if(page.props.flash.status === true){
-    toaster.success(page.props.flash.message);
-}
-
 const showDetails = (id) => {
     show.value = !show.value;
     customer.value = items.value.find((item) => item.id === id);
 }
 </script>
 <template>
-    <div class="p-4 bg-[#f8f8f8]">
+    <div class="pos-page">
         <InvoiceDetails v-model:show="show" :customer="customer"/>
-        <input
-            v-model="searchValue"
-            type="text"
-            class="mb-2 px-2 py-1 w-[300px] border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-            placeholder="Search...."
-        />
-        <EasyDataTable
-            buttons-pagination
-            alternating
-            :headers="headers"
-            :items="items"
-            :search-value="searchValue"
-            :search-field="searchField"
-            :rows-per-page="5"
-        >
-            <template #item-created_at="{ created_at, date, formatted_date }">
-                {{ formatted_date }}
-            </template>
-            <template #item-action="{ id }">
-                <button
-                    @click="showDetails(id)">
-                    <span class="material-icons">visibility</span>
-                </button>
-                <button @click="deleteInvoice(id)">
-                    <span class="material-icons">delete</span>
-                </button>
-            </template>
-        </EasyDataTable>
+
+        <section class="pos-section">
+            <div class="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-slate-900">Invoice Register</h1>
+                    <p class="text-sm text-slate-500">Review completed sales, totals, and bill details.</p>
+                </div>
+            </div>
+
+            <input
+                v-model="searchValue"
+                type="text"
+                class="pos-search mb-4"
+                placeholder="Search invoices by customer or date"
+            />
+
+            <EasyDataTable
+                buttons-pagination
+                alternating
+                :headers="headers"
+                :items="items"
+                :search-value="searchValue"
+                :search-field="searchField"
+                :rows-per-page="5"
+            >
+                <template #item-created_at="{ formatted_date }">
+                    <span class="font-medium text-slate-700">{{ formatted_date }}</span>
+                </template>
+
+                <template #item-action="{ id, status, payable }">
+                    <div class="flex items-center gap-2">
+                        <button @click="showDetails(id)" class="pos-button-neutral px-3 py-2">
+                            <span class="material-icons text-[18px]">visibility</span>
+                        </button>
+                        <button
+                            v-if="status !== 'paid'"
+                            @click="markInvoicePaid({ id, payable })"
+                            class="pos-button-primary px-3 py-2 text-xs font-semibold"
+                        >
+                            Mark Paid
+                        </button>
+                        <button @click="deleteInvoice(id)" class="pos-button-danger px-3 py-2">
+                            <span class="material-icons text-[18px]">delete</span>
+                        </button>
+                    </div>
+                </template>
+            </EasyDataTable>
+        </section>
     </div>
 </template>
 <style scoped></style>

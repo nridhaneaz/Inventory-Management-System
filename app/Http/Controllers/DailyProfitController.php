@@ -17,7 +17,7 @@ class DailyProfitController extends Controller
     {
         try {
             $userId = $request->header('id');
-            $today = Carbon::today();
+            $today = Carbon::today(config('app.business_timezone'));
             
             // Calculate today's profit
             $todayData = $this->calculateDayProfit($userId, $today);
@@ -78,8 +78,9 @@ class DailyProfitController extends Controller
     public function calculateDayProfit($userId, $targetDate)
     {
         // Specific day date range
-        $startOfDay = $targetDate->copy()->startOfDay();
-        $endOfDay = $targetDate->copy()->endOfDay();
+        $timezone = config('app.business_timezone');
+        $startOfDay = $targetDate->copy()->setTimezone($timezone)->startOfDay()->utc();
+        $endOfDay = $targetDate->copy()->setTimezone($timezone)->endOfDay()->utc();
         
         // Get invoices for this specific day
         $dayInvoices = Invoice::with('invoiceProducts.product')
@@ -94,6 +95,13 @@ class DailyProfitController extends Controller
             $daySales += $invoice->payable;
             
             foreach ($invoice->invoiceProducts as $invoiceProduct) {
+                if ($invoiceProduct->is_custom_item) {
+                    if ($invoiceProduct->cost_price !== null) {
+                        $dayProfitAmount += (floatval($invoiceProduct->sale_price) - floatval($invoiceProduct->cost_price)) * floatval($invoiceProduct->qty);
+                    }
+                    continue;
+                }
+
                 $product = $invoiceProduct->product;
                 if ($product && isset($product->purchase_price)) {
                     $profitPerUnit = floatval($invoiceProduct->sale_price) - floatval($product->purchase_price);
@@ -113,7 +121,7 @@ class DailyProfitController extends Controller
      */
     private function ensureDailyRecordsExist($userId)
     {
-        $currentDate = Carbon::now();
+        $currentDate = Carbon::now(config('app.business_timezone'));
         
         // Create records for the last 30 days
         for ($i = 0; $i < 30; $i++) {

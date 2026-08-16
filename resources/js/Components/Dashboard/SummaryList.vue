@@ -1,7 +1,7 @@
 <script setup>
 import { usePage } from '@inertiajs/vue3';
 import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import axios from '../../bootstrap';
 import { createToaster } from "@meforma/vue-toaster";
 
 const page = usePage();
@@ -10,6 +10,48 @@ const dailyProfits = ref([]);
 const isUpdating = ref(false);
 const isUpdatingDaily = ref(false);
 const toaster = createToaster({});
+
+const money = new Intl.NumberFormat('en-BD', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+});
+
+const parseNumeric = (value) => {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    const cleaned = String(value ?? '').replace(/,/g, '').trim();
+    const parsed = Number(cleaned);
+
+    return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const compactMoney = (value) => money.format(parseNumeric(value));
+const countValue = (value) => new Intl.NumberFormat('en-BD').format(parseNumeric(value));
+const statCards = [
+    { key: 'collection', label: 'Total Collection', icon: 'payments', tone: 'from-amber-500 to-orange-600', suffix: ' BDT' },
+    { key: 'customer', label: 'Total Customer', icon: 'groups', tone: 'from-slate-700 to-slate-900' },
+    { key: 'category', label: 'Total Category', icon: 'category', tone: 'from-amber-600 to-amber-700' },
+    { key: 'vat', label: 'Vat Collection', icon: 'receipt_long', tone: 'from-emerald-600 to-emerald-700', suffix: ' BDT' },
+    { key: 'total', label: 'Total Sale', icon: 'point_of_sale', tone: 'from-stone-700 to-stone-900', suffix: ' BDT' },
+    { key: 'invoice', label: 'Invoices', icon: 'description', tone: 'from-orange-600 to-red-600' },
+    { key: 'weightStock', label: 'Weight Stock', icon: 'inventory_2', tone: 'from-teal-600 to-cyan-700', unit: 'weight' },
+    { key: 'pieceStock', label: 'Pieces Stock', icon: 'inventory_2', tone: 'from-cyan-600 to-sky-700', unit: 'pieces' },
+    { key: 'totalProfit', label: 'Total Profit', icon: 'trending_up', tone: 'from-emerald-600 to-green-700', suffix: ' BDT' },
+    { key: 'todayProfit', label: "Today's Profit", icon: 'today', tone: 'from-blue-600 to-indigo-700', suffix: ' BDT' },
+    { key: 'currentMonthProfit', label: 'Current Month Profit', icon: 'calendar_month', tone: 'from-amber-500 to-yellow-600', suffix: ' BDT' },
+];
+
+const formatWeightStock = (value) => {
+    const grams = Number(value || 0);
+
+    if (grams >= 1000) {
+        return `${(grams / 1000).toFixed(3).replace(/\.0+$/, '').replace(/\.$/, '')} KG`;
+    }
+
+    return `${new Intl.NumberFormat('en-BD').format(grams)} GM`;
+};
 
 onMounted(() => {
   // Set monthly profits data from the backend
@@ -24,9 +66,7 @@ onMounted(() => {
 });
 
 // Format currency function
-const formatCurrency = (value) => {
-  return parseFloat(value).toFixed(2);
-};
+const formatCurrency = (value) => compactMoney(value);
 
 // Format date function
 const formatDate = (dateString) => {
@@ -82,216 +122,126 @@ const updateDailyProfitData = async () => {
 </script>
 
 <template>
-<!-- component -->
-<div class="flex flex-wrap mb-2">
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pl-2">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-users fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">Total Collection</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['collection'] }} BDT<span class="text-green-400"><i class="fas fa-caret-down"></i></span></h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pl-2">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-users fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">Total Customer</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['customer'] }} <span class="text-blue-400"><i class="fas fa-caret-up"></i></span></h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pr-2 xl:pr-3 xl:pl-1">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-user-plus fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right pr-1">
-                    <h5 class="text-white font-bold">Total Category</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['category'] }} <span class="text-orange-400"><i class="fas fa-caret-up"></i></span></h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pr-2 xl:pr-3 xl:pl-1">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-user-plus fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right pr-1">
-                    <h5 class="text-white font-bold">Vat Collection</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['vat'] }} BDT<span class="text-orange-400"><i class="fas fa-caret-up"></i></span></h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pl-2 xl:pl-3 xl:pr-2">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-server fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">Total Sale</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['total'] }} BDT</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pr-2 xl:pl-2 xl:pr-3">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-tasks fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">Invoices</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['invoice'] }} </h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Product Summary Cards -->
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pl-2">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-box fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">Total Products Quantity</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['totalQty'] || 0 }}</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pl-2">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-dollar-sign fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">Total Profit</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ page.props.data['totalProfit'] || '0' }} BDT</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Today's Profit Card -->
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pl-2">
-        <div class="bg-blue-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-calendar-day fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">Today's Profit</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ formatCurrency(page.props.data.todayProfit?.profit_amount || 0) }} BDT</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Current Month Profit Card -->
-    <div class="w-full md:w-1/2 xl:w-1/3 pt-3 px-3 md:pl-2">
-        <div class="bg-green-700 border rounded shadow p-2">
-            <div class="flex flex-row items-center">
-                <div class="flex-shrink pl-1 pr-4"><i class="fas fa-chart-line fa-2x fa-fw fa-inverse"></i></div>
-                <div class="flex-1 text-right">
-                    <h5 class="text-white font-bold">{{ page.props.data.currentMonthProfit?.month }} {{ page.props.data.currentMonthProfit?.year }} Profit</h5>
-                    <h3 class="text-white text-3xl font-bold">{{ formatCurrency(page.props.data.currentMonthProfit?.profit_amount || 0) }} BDT</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Daily Profit History Section -->
-<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Daily Profit History</h2>
-        
-        <!-- Update Daily Profit Button -->
-        <button 
-            @click="updateDailyProfitData" 
-            class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center"
-            :disabled="isUpdatingDaily"
+<div class="pos-page">
+    <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+        <article
+            v-for="card in statCards"
+            :key="card.key"
+            class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_18px_40px_rgba(15,23,42,0.08)]"
         >
-            <i class="fas fa-sync-alt mr-2" :class="{ 'fa-spin': isUpdatingDaily }"></i>
-            {{ isUpdatingDaily ? 'Updating...' : 'Update Daily Profit' }}
-        </button>
-    </div>
-    
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white">
-            <thead>
-                <tr>
-                    <th class="py-2 px-4 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Date</th>
-                    <th class="py-2 px-4 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Sales (BDT)</th>
-                    <th class="py-2 px-4 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Profit (BDT)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="profit in dailyProfits" :key="profit.date" 
-                    class="hover:bg-gray-50">
-                    <td class="py-3 px-4 border-b border-gray-200 font-medium">{{ formatDate(profit.date) }}</td>
-                    <td class="py-3 px-4 border-b border-gray-200">{{ formatCurrency(profit.total_sales) }}</td>
-                    <td class="py-3 px-4 border-b border-gray-200 font-medium" 
-                        :class="profit.profit_amount > 0 ? 'text-green-600' : 'text-red-600'">
-                        {{ formatCurrency(profit.profit_amount) }}
-                    </td>
-                </tr>
-                
-                <!-- Show message if no profit history -->
-                <tr v-if="dailyProfits.length === 0">
-                    <td colspan="3" class="py-3 px-4 text-center text-gray-500">No daily profit history available</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
-</div>
+            <div :class="['flex h-full items-center justify-between bg-gradient-to-br p-5 text-white', card.tone]">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/70">{{ card.label }}</p>
+                    <h3 class="mt-2 text-3xl font-bold leading-none">
+                        <template v-if="card.key === 'todayProfit'">
+                            {{ compactMoney(page.props.data.todayProfit?.profit_amount || 0) }}{{ card.suffix || '' }}
+                        </template>
+                        <template v-else-if="card.key === 'currentMonthProfit'">
+                            {{ compactMoney(page.props.data.currentMonthProfit?.profit_amount || 0) }}{{ card.suffix || '' }}
+                        </template>
+                        <template v-else-if="card.key === 'totalProfit'">
+                            {{ compactMoney(page.props.data['totalProfit'] || 0) }}{{ card.suffix || '' }}
+                        </template>
+                        <template v-else-if="card.key === 'weightStock'">
+                            {{ formatWeightStock(page.props.data.weightStock || 0) }}
+                        </template>
+                        <template v-else-if="card.key === 'pieceStock'">
+                            {{ countValue(page.props.data.pieceStock || 0) }} PCS
+                        </template>
+                        <template v-else-if="card.key === 'collection' || card.key === 'vat' || card.key === 'total'">
+                            {{ compactMoney(page.props.data[card.key] || 0) }}{{ card.suffix || '' }}
+                        </template>
+                        <template v-else>
+                            {{ countValue(page.props.data[card.key] || 0) }}
+                        </template>
+                    </h3>
+                </div>
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+                    <span class="material-icons text-[24px] leading-none">{{ card.icon }}</span>
+                </div>
+            </div>
+        </article>
+    </section>
 
-<!-- Monthly Profit History Section -->
-<div class="bg-white rounded-lg shadow-md p-6 mb-6">
-    <div class="flex justify-between items-center mb-4">
-        <h2 class="text-2xl font-bold">Monthly Profit History</h2>
-        
-        <!-- Update Monthly Profit Button -->
-        <button 
-            @click="updateMonthlyProfitData" 
-            class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline flex items-center"
-            :disabled="isUpdating"
-        >
-            <i class="fas fa-sync-alt mr-2" :class="{ 'fa-spin': isUpdating }"></i>
-            {{ isUpdating ? 'Updating...' : 'Update Monthly Profit' }}
-        </button>
-    </div>
-    
-    <div class="overflow-x-auto">
-        <table class="min-w-full bg-white">
-            <thead>
-                <tr>
-                    <th class="py-2 px-4 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Month</th>
-                    <th class="py-2 px-4 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Year</th>
-                    <th class="py-2 px-4 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Total Sales (BDT)</th>
-                    <th class="py-2 px-4 border-b-2 border-gray-200 bg-gray-100 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Profit (BDT)</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="profit in monthlyProfits" :key="`${profit.month}-${profit.year}`" 
-                    class="hover:bg-gray-50">
-                    <td class="py-3 px-4 border-b border-gray-200">{{ profit.month }}</td>
-                    <td class="py-3 px-4 border-b border-gray-200">{{ profit.year }}</td>
-                    <td class="py-3 px-4 border-b border-gray-200">{{ formatCurrency(profit.total_sales) }}</td>
-                    <td class="py-3 px-4 border-b border-gray-200 font-medium" 
-                        :class="profit.profit_amount > 0 ? 'text-green-600' : 'text-red-600'">
-                        {{ formatCurrency(profit.profit_amount) }}
-                    </td>
-                </tr>
-                
-                <!-- Show message if no profit history -->
-                <tr v-if="monthlyProfits.length === 0">
-                    <td colspan="4" class="py-3 px-4 text-center text-gray-500">No profit history available</td>
-                </tr>
-            </tbody>
-        </table>
-    </div>
+    <section class="pos-section">
+        <div class="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Daily Profit History</h2>
+                <p class="text-sm text-slate-500">Track day-by-day performance for the bakery counter.</p>
+            </div>
+            <button @click="updateDailyProfitData" class="pos-button-primary" :disabled="isUpdatingDaily">
+                <span class="material-icons text-[18px]" :class="{ 'animate-spin': isUpdatingDaily }">sync</span>
+                {{ isUpdatingDaily ? 'Updating...' : 'Update Daily Profit' }}
+            </button>
+        </div>
+
+        <div class="pos-table-wrap">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="bg-amber-50 text-amber-900">
+                        <tr>
+                            <th class="px-5 py-4 font-semibold uppercase tracking-[0.2em]">Date</th>
+                            <th class="px-5 py-4 font-semibold uppercase tracking-[0.2em]">Total Sales</th>
+                            <th class="px-5 py-4 font-semibold uppercase tracking-[0.2em]">Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr v-for="profit in dailyProfits" :key="profit.date" class="bg-white">
+                            <td class="px-5 py-4 font-medium text-slate-900">{{ formatDate(profit.date) }}</td>
+                            <td class="px-5 py-4 text-slate-600">{{ formatCurrency(profit.total_sales) }}</td>
+                            <td class="px-5 py-4 font-semibold" :class="profit.profit_amount > 0 ? 'text-emerald-600' : 'text-rose-600'">
+                                {{ formatCurrency(profit.profit_amount) }}
+                            </td>
+                        </tr>
+                        <tr v-if="dailyProfits.length === 0">
+                            <td colspan="3" class="px-5 py-10 text-center text-slate-500">No daily profit history available yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <section class="pos-section">
+        <div class="mb-5 flex flex-col gap-3 border-b border-slate-200 pb-4 md:flex-row md:items-center md:justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-slate-900">Monthly Profit History</h2>
+                <p class="text-sm text-slate-500">Review monthly revenue and margin trends.</p>
+            </div>
+            <button @click="updateMonthlyProfitData" class="pos-button-success" :disabled="isUpdating">
+                <span class="material-icons text-[18px]" :class="{ 'animate-spin': isUpdating }">sync</span>
+                {{ isUpdating ? 'Updating...' : 'Update Monthly Profit' }}
+            </button>
+        </div>
+
+        <div class="pos-table-wrap">
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-left text-sm">
+                    <thead class="bg-stone-50 text-stone-700">
+                        <tr>
+                            <th class="px-5 py-4 font-semibold uppercase tracking-[0.2em]">Month</th>
+                            <th class="px-5 py-4 font-semibold uppercase tracking-[0.2em]">Year</th>
+                            <th class="px-5 py-4 font-semibold uppercase tracking-[0.2em]">Total Sales</th>
+                            <th class="px-5 py-4 font-semibold uppercase tracking-[0.2em]">Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr v-for="profit in monthlyProfits" :key="`${profit.month}-${profit.year}`" class="bg-white">
+                            <td class="px-5 py-4 font-medium text-slate-900">{{ profit.month }}</td>
+                            <td class="px-5 py-4 text-slate-600">{{ profit.year }}</td>
+                            <td class="px-5 py-4 text-slate-600">{{ formatCurrency(profit.total_sales) }}</td>
+                            <td class="px-5 py-4 font-semibold" :class="profit.profit_amount > 0 ? 'text-emerald-600' : 'text-rose-600'">
+                                {{ formatCurrency(profit.profit_amount) }}
+                            </td>
+                        </tr>
+                        <tr v-if="monthlyProfits.length === 0">
+                            <td colspan="4" class="px-5 py-10 text-center text-slate-500">No monthly profit history available yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 </div>
 </template>
 

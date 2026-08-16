@@ -1,8 +1,6 @@
 <script setup>
-import { useForm,Link,router,usePage } from '@inertiajs/vue3';
+import { useForm, Link, router, usePage } from '@inertiajs/vue3';
 import { reactive } from 'vue';
-import { createToaster } from "@meforma/vue-toaster";
-const toaster = createToaster({ });
 
 const formStatus=reactive({
     title:'Create Category',
@@ -33,15 +31,9 @@ const submitForm = () => {
     form.post(URL, {
         preserveScroll: true,
         onSuccess: () => {
-            if(page.props.flash.status===true){
-                toaster.success(page.props.flash.message);
-                setTimeout(() => {
-                    router.get("/category-page");
-                },500);
-            }
-            else {
-                toaster.error(page.props.flash.message)
-            }
+            setTimeout(() => {
+                router.get("/category-page");
+            }, 500);
         }
     })
 }
@@ -49,26 +41,24 @@ const submitForm = () => {
 </script>
 
 <template>
-    <!-- component -->
-    <div class="h-screen bg-gray-100 flex  justify-center p-4">
-      <div class="max-w-md w-full bg-white rounded-xl shadow-lg p-8 h-[250px] mt-[200px]">
-        <h2 class="text-2xl font-bold text-gray-900 mb-6 text-center"> {{ formStatus.title }}</h2>
+    <div class="pos-page">
+      <section class="mx-auto w-full max-w-xl pos-section">
+        <div class="mb-6 border-b border-slate-200 pb-4">
+          <p class="text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">Category</p>
+          <h2 class="mt-1 text-3xl font-bold text-slate-900">{{ formStatus.title }}</h2>
+          <p class="text-sm text-slate-500">Group ingredients and shop stock into clear categories.</p>
+        </div>
 
-        <form @submit.prevent="submitForm" class="space-y-4">
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
-            <input v-model="form.name"
-              type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all"
-            />
+        <form @submit.prevent="submitForm" class="grid gap-4">
+          <div class="grid gap-2">
+            <label class="text-sm font-semibold text-slate-700">Category Name</label>
+            <input v-model="form.name" type="text" class="pos-input" />
             <input type="text" v-model="form.id" hidden>
           </div>
 
-          <button class="w-full bg-orange-600 hover:bg-orange-700 text-white font-medium py-2.5 rounded-lg transition-colors">
-            {{ formStatus.buttonTitle }}
-          </button>
+          <button class="pos-button-primary w-full">{{ formStatus.buttonTitle }}</button>
         </form>
-      </div>
+      </section>
     </div>
     </template>
 

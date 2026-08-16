@@ -41,6 +41,7 @@ class HandleInertiaRequests extends Middleware
                 'status'=> fn () => $request->session()->pull('status'),
                 'error'=> fn()=>$request->session()->pull('error'),
             ],
+            'business' => fn () => config('pos.business'),
         ]);
     }
 }

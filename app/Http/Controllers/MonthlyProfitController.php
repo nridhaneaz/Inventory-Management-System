@@ -15,8 +15,9 @@ class MonthlyProfitController extends Controller
     public function updateMonthlyProfits(Request $request)
     {
         $userId = $request->header('id');
-        $currentMonth = Carbon::now()->format('F');
-        $currentYear = Carbon::now()->year;
+        $businessNow = Carbon::now(config('app.business_timezone'));
+        $currentMonth = $businessNow->format('F');
+        $currentYear = $businessNow->year;
         
         // Calculate profit from all sales this month
         $dashboardController = app(DashboardController::class);
@@ -43,7 +44,7 @@ class MonthlyProfitController extends Controller
             'message' => 'Monthly profit data updated successfully for ' . $currentMonth . ' ' . $currentYear,
             'data' => $monthlyProfit,
             'debug' => [
-                'current_date' => Carbon::now()->toDateString(),
+                'current_date' => $businessNow->toDateString(),
                 'current_month' => $currentMonth,
                 'current_year' => $currentYear,
                 'calculated_profit' => $profitData['profit'],
@@ -58,7 +59,7 @@ class MonthlyProfitController extends Controller
     private function ensurePreviousMonthsExist($userId)
     {
         $dashboardController = app(DashboardController::class);
-        $currentDate = Carbon::now();
+        $currentDate = Carbon::now(config('app.business_timezone'));
         
         // Create/update records for the last 6 months
         for ($i = 1; $i <= 6; $i++) {

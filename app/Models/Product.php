@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use App\Services\UnitConversionService;
 
 class Product extends Model
 {
@@ -16,6 +17,8 @@ class Product extends Model
         'name',
         'price',        // This is the selling price
         'purchase_price', // Adding purchase price field
+        'unit_type',
+        'stock_quantity',
         'unit',
         'img_url',
     ];
@@ -25,7 +28,7 @@ class Product extends Model
      *
      * @var array
      */
-    protected $appends = ['profit', 'profit_percentage'];
+    protected $appends = ['profit', 'profit_percentage', 'stock_display', 'price_label'];
 
     /**
      * Get the profit for the product.
@@ -53,6 +56,21 @@ class Product extends Model
         }
         
         return round(($this->price - $this->purchase_price) / $this->purchase_price * 100, 2);
+    }
+
+    public function getStockDisplayAttribute(): string
+    {
+        return app(UnitConversionService::class)->formatStock($this->stock_quantity ?? $this->unit ?? 0, $this->unit_type);
+    }
+
+    public function getPriceLabelAttribute(): string
+    {
+        return app(UnitConversionService::class)->formatPriceLabel($this->price, $this->unit_type);
+    }
+
+    public function getBaseQuantityAttribute(): int
+    {
+        return (int) ($this->stock_quantity ?? $this->unit ?? 0);
     }
 
     /**

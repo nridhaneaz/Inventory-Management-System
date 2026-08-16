@@ -11,12 +11,13 @@ use App\Models\Product;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Log;
+use App\Services\UnitConversionService;
 
 class DashboardController extends Controller
 {
     public function dashboardPage(Request $request){
         $userId = $request->header('id');
+        $converter = app(UnitConversionService::class);
         
         // Get basic dashboard data
         $data = [
@@ -29,25 +30,42 @@ class DashboardController extends Controller
             'vat' => Invoice::where('user_id', '=', $userId)->sum('vat')
         ];
         
-        // Calculate total product quantity and profit
+        // Calculate product stock quantities without treating unsold inventory as profit.
         $products = Product::where('user_id', '=', $userId)->get();
-        $totalQty = 0;
+        $weightStock = 0;
+        $pieceStock = 0;
         $totalProfit = 0;
-        
+
         foreach ($products as $product) {
-            $totalQty += (int)$product->unit;
-            if (isset($product->price) && isset($product->purchase_price)) {
-                $profitPerUnit = floatval($product->price) - floatval($product->purchase_price);
-                $totalProfit += $profitPerUnit * (int)$product->unit;
+            $baseQuantity = (int) ($product->stock_quantity ?? $product->unit ?? 0);
+
+            if ($converter->isPieceUnit($product->unit_type)) {
+                $pieceStock += $baseQuantity;
+            } else {
+                $weightStock += $baseQuantity;
             }
         }
-        
-        $data['totalQty'] = $totalQty;
-        $data['totalProfit'] = number_format($totalProfit, 2);
+
+        $data['weightStock'] = $weightStock;
+        $data['pieceStock'] = $pieceStock;
+        $data['totalQty'] = $weightStock + $pieceStock;
+
+        $allInvoices = Invoice::with('invoiceProducts.product')
+            ->where('user_id', '=', $userId)
+            ->get();
+
+        foreach ($allInvoices as $invoice) {
+            foreach ($invoice->invoiceProducts as $invoiceProduct) {
+                $totalProfit += $this->calculateProfitForInvoiceItems([$invoiceProduct]);
+            }
+        }
+
+        $data['totalProfit'] = round($totalProfit, 2);
         
         // Get current month and year
-        $currentMonth = Carbon::now()->format('F');
-        $currentYear = Carbon::now()->year;
+        $businessNow = Carbon::now(config('app.business_timezone'));
+        $currentMonth = $businessNow->format('F');
+        $currentYear = $businessNow->year;
         
         // Calculate current month's profit from invoices directly
         $currentMonthData = $this->calculateCurrentMonthProfit($userId);
@@ -81,7 +99,7 @@ class DashboardController extends Controller
         // ========== DAILY PROFIT SECTION ==========
         
         // Get current date
-        $today = Carbon::today();
+        $today = Carbon::today(config('app.business_timezone'));
         
         // Calculate today's profit
         $todayData = $this->calculateDayProfit($userId, $today);
@@ -115,10 +133,16 @@ class DashboardController extends Controller
 
     public function salePage(Request $request){
         $userId = $request->header('id');
-        $customers = Customer::where('user_id', '=', $userId)->get();
-        $products = Product::where('user_id', '=', $userId)->where('unit', '>', 0)->get();
+        $customers = Customer::where('user_id', '=', $userId)->orderBy('name')->get();
+        $products = Product::where('user_id', '=', $userId)->get()->filter(function ($product) {
+            return (int) ($product->stock_quantity ?? $product->unit ?? 0) > 0;
+        })->values();
 
-        return Inertia::render('Sale/SalePage', ['customers' => $customers, 'products' => $products]);
+        return Inertia::render('Sale/SalePage', [
+            'customers' => $customers,
+            'products' => $products,
+            'business' => config('pos.business'),
+        ]);
     }
     
     /**
@@ -126,7 +150,7 @@ class DashboardController extends Controller
      */
     private function ensureMonthlyRecordsExist($userId)
     {
-        $currentDate = Carbon::now();
+        $currentDate = Carbon::now(config('app.business_timezone'));
         
         // Create records for the last 12 months
         for ($i = 0; $i < 12; $i++) {
@@ -160,7 +184,7 @@ class DashboardController extends Controller
      */
     private function ensureDailyRecordsExist($userId)
     {
-        $currentDate = Carbon::now();
+        $currentDate = Carbon::now(config('app.business_timezone'));
         
         // Create records for the last 30 days
         for ($i = 0; $i < 30; $i++) {
@@ -186,14 +210,44 @@ class DashboardController extends Controller
         }
     }
     
+    public function calculateProfitForInvoiceItems($invoiceItems)
+    {
+        $profitAmount = 0.0;
+
+        foreach ($invoiceItems as $invoiceProduct) {
+            if ($invoiceProduct->is_custom_item) {
+                if ($invoiceProduct->cost_price === null) {
+                    continue;
+                }
+
+                $profitAmount += (floatval($invoiceProduct->sale_price) - floatval($invoiceProduct->cost_price)) * floatval($invoiceProduct->qty);
+                continue;
+            }
+
+            $product = $invoiceProduct->product ?? null;
+            if (!$product || !isset($product->purchase_price)) {
+                continue;
+            }
+
+            $salePrice = floatval($invoiceProduct->sale_price ?? 0);
+            $purchasePrice = floatval($product->purchase_price ?? 0);
+            $qty = floatval($invoiceProduct->qty ?? 0);
+
+            $profitAmount += ($salePrice - $purchasePrice) * $qty;
+        }
+
+        return round($profitAmount, 2);
+    }
+
     /**
      * Calculate profit for a specific month
      */
     public function calculateMonthProfit($userId, $targetDate)
     {
         // Specific month date range
-        $startOfMonth = $targetDate->copy()->startOfMonth();
-        $endOfMonth = $targetDate->copy()->endOfMonth();
+        $timezone = config('app.business_timezone');
+        $startOfMonth = $targetDate->copy()->setTimezone($timezone)->startOfMonth()->utc();
+        $endOfMonth = $targetDate->copy()->setTimezone($timezone)->endOfMonth()->utc();
         
         // Get invoices for this specific month
         $monthInvoices = Invoice::with('invoiceProducts.product')
@@ -206,14 +260,8 @@ class DashboardController extends Controller
         
         foreach ($monthInvoices as $invoice) {
             $monthSales += $invoice->payable;
-            
-            foreach ($invoice->invoiceProducts as $invoiceProduct) {
-                $product = $invoiceProduct->product;
-                if ($product && isset($product->purchase_price)) {
-                    $profitPerUnit = floatval($invoiceProduct->sale_price) - floatval($product->purchase_price);
-                    $monthProfitAmount += $profitPerUnit * $invoiceProduct->qty;
-                }
-            }
+
+            $monthProfitAmount += $this->calculateProfitForInvoiceItems($invoice->invoiceProducts);
         }
         
         return [
@@ -228,8 +276,9 @@ class DashboardController extends Controller
     public function calculateDayProfit($userId, $targetDate)
     {
         // Specific day date range
-        $startOfDay = $targetDate->copy()->startOfDay();
-        $endOfDay = $targetDate->copy()->endOfDay();
+        $timezone = config('app.business_timezone');
+        $startOfDay = $targetDate->copy()->setTimezone($timezone)->startOfDay()->utc();
+        $endOfDay = $targetDate->copy()->setTimezone($timezone)->endOfDay()->utc();
         
         // Get invoices for this specific day
         $dayInvoices = Invoice::with('invoiceProducts.product')
@@ -242,14 +291,8 @@ class DashboardController extends Controller
         
         foreach ($dayInvoices as $invoice) {
             $daySales += $invoice->payable;
-            
-            foreach ($invoice->invoiceProducts as $invoiceProduct) {
-                $product = $invoiceProduct->product;
-                if ($product && isset($product->purchase_price)) {
-                    $profitPerUnit = floatval($invoiceProduct->sale_price) - floatval($product->purchase_price);
-                    $dayProfitAmount += $profitPerUnit * $invoiceProduct->qty;
-                }
-            }
+
+            $dayProfitAmount += $this->calculateProfitForInvoiceItems($invoice->invoiceProducts);
         }
         
         return [
@@ -261,6 +304,6 @@ class DashboardController extends Controller
     // Calculate current month's profit (can be used by other controllers)
     public function calculateCurrentMonthProfit($userId)
     {
-        return $this->calculateMonthProfit($userId, Carbon::now());
+        return $this->calculateMonthProfit($userId, Carbon::now(config('app.business_timezone')));
     }
 }

@@ -45,43 +45,41 @@ const submitForm = () => {
 </script>
 
 <template>
-<!-- component -->
+<div class="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(249,115,22,0.16),_transparent_30%),linear-gradient(180deg,_#fffdf8_0%,_#f8fafc_100%)] flex items-center justify-center p-4">
+  <div class="w-full max-w-3xl rounded-[32px] border border-white/70 bg-white/90 p-6 shadow-[0_30px_80px_rgba(15,23,42,0.18)] backdrop-blur md:p-10">
+    <div class="mb-6 border-b border-slate-200 pb-4">
+      <p class="text-xs font-semibold uppercase tracking-[0.3em] text-amber-700">City Bakeware Trade</p>
+      <h1 class="mt-2 text-3xl font-bold text-slate-900">Create staff account</h1>
+      <p class="mt-2 text-sm text-slate-500">Register access for the bakery POS system.</p>
+    </div>
 
-  <div class="container mx-auto py-8">
-    <h1 class="text-2xl font-bold mb-6 text-center">Registration Form</h1>
-    <form @submit.prevent="submitForm"  class="w-full max-w-sm mx-auto bg-white p-8 rounded-md shadow-md">
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="name">Name</label>
-        <input v-model="form.name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-          type="text" id="name" name="name" placeholder="John Doe">
+    <form @submit.prevent="submitForm" class="grid gap-4 md:grid-cols-2">
+      <div class="grid gap-2 md:col-span-2">
+        <label class="text-sm font-semibold text-slate-700" for="name">Name</label>
+        <input v-model="form.name" class="pos-input" type="text" id="name" name="name" placeholder="John Doe">
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="email">Email</label>
-        <input v-model="form.email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-          type="email" id="email" name="email" placeholder="john@example.com">
+      <div class="grid gap-2">
+        <label class="text-sm font-semibold text-slate-700" for="email">Email</label>
+        <input v-model="form.email" class="pos-input" type="email" id="email" name="email" placeholder="john@example.com">
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="mobile">Mobile</label>
-        <input v-model="form.mobile" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-          type="text" id="mobile" name="mobile">
+      <div class="grid gap-2">
+        <label class="text-sm font-semibold text-slate-700" for="mobile">Mobile</label>
+        <input v-model="form.mobile" class="pos-input" type="text" id="mobile" name="mobile">
       </div>
-      <div class="mb-4">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="password">Password</label>
-        <input v-model="form.password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
-          type="password" id="password" name="password">
+      <div class="grid gap-2 md:col-span-2">
+        <label class="text-sm font-semibold text-slate-700" for="password">Password</label>
+        <input v-model="form.password" class="pos-input" type="password" id="password" name="password">
       </div>
 
-      <button type="submit"
-        class="w-full bg-indigo-500 text-white text-sm font-bold py-2 px-4 rounded-md hover:bg-indigo-600 transition duration-300"
-        >Register</button>
+      <button type="submit" class="pos-button-primary md:col-span-2">Register</button>
     </form>
 
-        <div class="mt-6 text-center text-sm text-gray-600">
-        Don't have an account?
-        <Link href="/login-page" class="text-indigo-600 hover:text-indigo-500 font-medium">Sign In</Link>
-      </div>
-
+    <div class="mt-6 text-center text-sm text-slate-600">
+      Don't have an account?
+      <Link href="/login-page" class="font-semibold text-amber-700 hover:text-amber-800">Sign In</Link>
+    </div>
   </div>
+</div>
 
 </template>
 

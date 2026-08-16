@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Helper\JWTToken;
 use App\Mail\OTPMail;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Inertia\Inertia;
 
@@ -63,16 +63,19 @@ class UserController extends Controller
                'email'=>'string|required',
                'password'=>'string|required',
            ]);
-           $count=User::where('email','=',$request->email)
-                    ->where('password','=',$request->password)->first();
-           if($count != null){
-                $request->session()->put('email',$count->email);
-                $request->session()->put('user_id',$count->id);
-               $data=['message'=>'User login Successfully','status'=>true,'error'=>''];
-               return redirect()->route('loginPage')->with($data);
-           }else{
-                return redirect()->route('loginPage')->with(['message'=>'User login Fail','status'=>false,'error'=>'something went wrong']);
-           }
+             $credentials = $request->only('email', 'password');
+
+             if (Auth::attempt($credentials)) {
+                 $request->session()->regenerate();
+
+                 $request->session()->put('email', Auth::user()->email);
+                 $request->session()->put('user_id', Auth::id());
+
+                 $data=['message'=>'User login Successfully','status'=>true,'error'=>''];
+                 return redirect()->route('loginPage')->with($data);
+             }
+
+             return redirect()->route('loginPage')->with(['message'=>'User login Fail','status'=>false,'error'=>'something went wrong']);
     }
 
     public function userLogout(Request $request) {
