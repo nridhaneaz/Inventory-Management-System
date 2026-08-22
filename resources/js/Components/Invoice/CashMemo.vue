@@ -89,7 +89,7 @@ const formatAmount = (product) => toBengaliNumber(Number(product.subtotal ?? pro
                 <tr><th>নং</th><th>বিবরণ</th><th>পরিমাণ</th><th>দর</th><th>টাকা</th></tr>
             </thead>
             <tbody>
-                <tr v-for="(product, index) in lineItems" :key="product.id || index">
+                <tr v-for="(product, index) in lineItems" :key="product.id || index" class="cash-memo__item-row">
                     <td>{{ toBengaliNumber(String(index + 1).padStart(2, '0')) }}</td>
                     <td>
                         {{ lineDescription(product) }}

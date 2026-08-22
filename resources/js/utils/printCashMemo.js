@@ -1,12 +1,13 @@
 export const cashMemoPrintStyles = `
-@page { size: A4 portrait; margin: 0; }
+@page { size: A4; margin: 8mm; }
 * { box-sizing: border-box; }
 html, body { width: 8.27in; margin: 0; padding: 0; background: #fff; }
 body { color: #111; font-family: "Noto Sans Bengali", "Segoe UI", sans-serif; }
-.cash-memo-print-sheet { width: 8.27in; min-height: 11.69in; overflow: hidden; background: #fff; }
-.cash-memo-print-slot { width: 8.27in; height: 5.845in; overflow: hidden; position: relative; page-break-inside: avoid; break-inside: avoid; }
-.cash-memo-print-scale { width: 8.5in; height: 6in; transform: scale(.93); transform-origin: top left; }
-.cash-memo { --memo-ink: #111; --memo-border: #202020; width: 8.5in; height: 6in; overflow: hidden; margin: 0; padding: .12in; border: 1px solid var(--memo-border); background: #fff; color: var(--memo-ink); font-family: "Noto Sans Bengali", "Segoe UI", sans-serif; }
+.cash-memo-print-sheet { width: 8.27in; min-height: 11.69in; background: #fff; }
+.cash-memo-print-slot { width: 8.27in; min-height: 11.69in; page-break-after: always; break-after: page; }
+.cash-memo-print-slot:last-child { page-break-after: auto; break-after: auto; }
+.cash-memo-print-scale { width: 8.27in; }
+.cash-memo { --memo-ink: #111; --memo-border: #202020; width: 8.27in; min-height: 11.69in; margin: 0; padding: .12in; border: 1px solid var(--memo-border); background: #fff; color: var(--memo-ink); font-family: "Noto Sans Bengali", "Segoe UI", sans-serif; }
 .cash-memo__header-top { display: grid; grid-template-columns: .62in 1fr 1.48in; gap: .08in; align-items: start; }
 .cash-memo__logo-wrap, .cash-memo__logo, .cash-memo__logo-placeholder { width: .54in; height: .54in; }
 .cash-memo__logo, .cash-memo__logo-placeholder { border: 1px solid var(--memo-ink); border-radius: 50%; }
@@ -29,9 +30,10 @@ export const printCashMemo = (elementId) => {
     const printWindow = window.open('', '_blank', 'width=900,height=1100');
     if (!printWindow) return false;
 
-    const itemRows = Array.from(sourceMemo.querySelectorAll('.cash-memo__table tbody tr'));
+    const itemRows = Array.from(sourceMemo.querySelectorAll('.cash-memo__item-row'));
+    const itemsPerPage = 30;
     const itemGroups = itemRows.length
-        ? Array.from({ length: Math.ceil(itemRows.length / 15) }, (_, index) => itemRows.slice(index * 15, index * 15 + 15))
+        ? Array.from({ length: Math.ceil(itemRows.length / itemsPerPage) }, (_, index) => itemRows.slice(index * itemsPerPage, index * itemsPerPage + itemsPerPage))
         : [[]];
 
     const memoMarkup = (rows, showSummary, isContinuation) => {
@@ -53,13 +55,7 @@ export const printCashMemo = (elementId) => {
     };
     const memoSlot = (markup) => `<section class="cash-memo-print-slot"><div class="cash-memo-print-scale">${markup}</div></section>`;
     const memoSections = itemGroups.map((rows, index) => memoSlot(memoMarkup(rows, index === itemGroups.length - 1, index > 0)));
-
-    // One short memo is printed twice on one A4 sheet. Longer invoices use the
-    // second slot for the next 15 items and continue onto additional sheets.
-    if (memoSections.length === 1) memoSections.push(memoSections[0]);
-    const printSheets = Array.from({ length: Math.ceil(memoSections.length / 2) }, (_, index) =>
-        `<main class="cash-memo-print-sheet">${memoSections.slice(index * 2, index * 2 + 2).join('')}</main>`
-    ).join('');
+    const printSheets = memoSections.map((section) => `<main class="cash-memo-print-sheet">${section}</main>`).join('');
 
     printWindow.document.write(`
         <!doctype html><html><head><title>Cash Memo</title>

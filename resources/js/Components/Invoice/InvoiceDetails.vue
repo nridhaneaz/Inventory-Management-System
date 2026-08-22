@@ -21,9 +21,9 @@ const printInvoice = () => {
 <template>
     <div
         v-if="show && customer"
-        class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm invoice-preview-modal"
+        class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm invoice-preview-modal"
     >
-        <div class="w-full max-w-4xl rounded-[28px] border border-white/60 bg-white p-4 shadow-[0_30px_80px_rgba(15,23,42,0.22)] md:p-6">
+        <div class="my-4 w-full max-w-4xl rounded-[28px] border border-white/60 bg-white p-4 shadow-[0_30px_80px_rgba(15,23,42,0.22)] md:p-6">
             <CashMemo :invoice="customer" :business="business" print-id="invoice-cash-memo-print" />
 
             <div class="mt-5 flex items-center justify-end gap-3 no-print">

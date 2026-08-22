@@ -268,11 +268,21 @@
 
         <!-- Manual Cash Memo Items Modal -->
         <div v-if="showCustomItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-            <div class="w-full max-w-7xl rounded-[28px] border border-white/60 bg-white p-5 shadow-xl">
+            <div class="max-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-y-auto rounded-[28px] border border-white/60 bg-white p-5 shadow-xl">
                 <h3 class="text-xl font-bold text-slate-900">Manual Cash Memo Items</h3>
                 <p class="mt-1 text-sm text-slate-500">Type as many one-time items as needed. These rows are saved with this sale only and do not affect inventory stock.</p>
 
                 <form class="mt-4" @submit.prevent="addCustomItemRows">
+                    <div class="mb-4 flex flex-wrap justify-end gap-2">
+                        <button type="button" class="pos-button-neutral" @click="openMessengerOrderModal">
+                            <span class="material-icons text-[18px]">content_paste</span>
+                            Paste Messenger Order
+                        </button>
+                        <button type="button" class="pos-button-neutral" @click="copyMessengerReply">
+                            <span class="material-icons text-[18px]">content_copy</span>
+                            Copy Messenger Reply
+                        </button>
+                    </div>
                     <div class="overflow-x-auto rounded-2xl border border-slate-200">
                         <table class="min-w-[1140px] w-full text-sm">
                             <thead class="bg-slate-50 text-slate-700">
@@ -292,10 +302,10 @@
                             <tbody class="divide-y divide-slate-100">
                                 <tr v-for="(row, index) in customItemRows" :key="row.key">
                                     <td class="px-2 py-2 font-medium">{{ index + 1 }}</td>
-                                    <td class="px-2 py-2"><input v-model="row.name" class="pos-input min-w-52" placeholder="Type new item..." /></td>
+                                    <td class="px-2 py-2"><input v-model="row.name" class="pos-input min-w-52" placeholder="Type new item..." @paste="handleManualItemPaste($event, index)" /></td>
                                     <td class="px-2 py-2">
                                         <select v-model="row.unit" class="pos-input min-w-20">
-                                            <option value="pcs">PCS</option><option value="kg">KG</option><option value="gm">GM</option>
+                                            <option value="pcs">PCS</option><option value="kg">KG</option><option value="gm">GM</option><option value="l">L</option><option value="ml">ML</option>
                                         </select>
                                     </td>
                                     <td class="px-2 py-2"><input v-model="row.quantity" type="number" min="0.001" step="0.001" class="pos-input min-w-20" /></td>
@@ -309,7 +319,7 @@
                             </tbody>
                         </table>
                     </div>
-                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                    <div class="sticky bottom-0 mt-4 flex flex-wrap items-center justify-between gap-3 bg-white pt-3">
                         <button type="button" class="pos-button-neutral" @click="addCustomItemRow">+ Add Row</button>
                         <div class="flex gap-2">
                             <button type="button" class="pos-button-neutral" @click="closeCustomItemModal">Cancel</button>
@@ -320,9 +330,33 @@
             </div>
         </div>
 
+        <!-- Messenger Order Parser Modal -->
+        <div v-if="showMessengerOrderModal" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+            <div class="max-h-[calc(100vh-2rem)] w-full max-w-2xl overflow-y-auto rounded-[28px] border border-white/60 bg-white p-5 shadow-xl">
+                <h3 class="text-xl font-bold text-slate-900">Paste Messenger Order</h3>
+                <p class="mt-1 text-sm text-slate-500">Paste one item per line. Each pasted Tk price is counted once as that item's total; profit can be entered manually.</p>
+                <textarea v-model="messengerOrderText" rows="7" class="pos-input mt-4 w-full" placeholder="Chocolate Cake - 2 KG - 800 Tk&#10;Brownie - 6 PCS - 300 Tk" @input="previewMessengerOrder"></textarea>
+
+                <div v-if="messengerOrderPreview.items.length" class="mt-4 max-h-64 overflow-y-auto rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm">
+                    <p class="font-semibold text-emerald-800">Detected Items</p>
+                    <p v-for="item in messengerOrderPreview.items" :key="`${item.name}-${item.quantity}-${item.rate}`" class="mt-1 text-emerald-900">
+                        {{ item.name }} | {{ item.quantity }} {{ unitLabel(item.unit) }} | {{ currency(item.rate) }}
+                    </p>
+                </div>
+                <div v-if="messengerOrderPreview.errors.length" class="mt-3 max-h-40 overflow-y-auto rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    <p v-for="error in messengerOrderPreview.errors" :key="error">{{ error }}</p>
+                </div>
+
+                <div class="sticky bottom-0 mt-5 flex justify-end gap-2 bg-white pt-3">
+                    <button type="button" class="pos-button-neutral" @click="closeMessengerOrderModal">Cancel</button>
+                    <button type="button" class="pos-button-primary" :disabled="messengerOrderPreview.items.length === 0" @click="addMessengerOrderItems">Add to Manual Items</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Invoice Preview Modal -->
-        <div v-if="showInvoicePreview && completedInvoice" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm print-modal">
-            <div class="w-full max-w-4xl rounded-[28px] border border-white/60 bg-white p-4 md:p-6 print-modal__content">
+        <div v-if="showInvoicePreview && completedInvoice" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm print-modal">
+            <div class="my-4 w-full max-w-4xl rounded-[28px] border border-white/60 bg-white p-4 md:p-6 print-modal__content">
                 <CashMemo :invoice="completedInvoice" :business="business" print-id="sale-cash-memo-print" />
 
                 <div class="mt-5 flex justify-end gap-3 no-print">
@@ -341,6 +375,7 @@ import { createToaster } from '@meforma/vue-toaster';
 import axios from '../../bootstrap';
 import CashMemo from '../Invoice/CashMemo.vue';
 import { printCashMemo } from '../../utils/printCashMemo';
+import { formatMessengerOrder, parseMessengerOrder } from '../../utils/messengerOrderParser';
 
 const page = usePage();
 const toaster = createToaster({});
@@ -359,8 +394,11 @@ const paymentType = ref('paid');
 const deliveryChargePaid = ref(false);
 const showCustomerModal = ref(false);
 const showCustomItemModal = ref(false);
+const showMessengerOrderModal = ref(false);
 const showInvoicePreview = ref(false);
 const completedInvoice = ref(null);
+const messengerOrderText = ref('');
+const messengerOrderPreview = ref({ items: [], errors: [] });
 
 const customer = reactive({
     id: '',
@@ -408,6 +446,8 @@ const calculate = reactive({
 const unitLabel = (unitType) => {
     if (unitType === 'pcs') return 'PCS';
     if (unitType === 'gm') return 'GM';
+    if (unitType === 'l') return 'L';
+    if (unitType === 'ml') return 'ML';
     return 'KG';
 };
 
@@ -532,6 +572,80 @@ const openCustomItemModal = () => {
 
 const closeCustomItemModal = () => {
     showCustomItemModal.value = false;
+};
+
+const previewMessengerOrder = () => {
+    messengerOrderPreview.value = parseMessengerOrder(messengerOrderText.value);
+};
+
+const openMessengerOrderModal = () => {
+    messengerOrderText.value = '';
+    messengerOrderPreview.value = { items: [], errors: [] };
+    showMessengerOrderModal.value = true;
+};
+
+const closeMessengerOrderModal = () => {
+    showMessengerOrderModal.value = false;
+};
+
+const addMessengerOrderItems = () => {
+    const { items, errors } = messengerOrderPreview.value;
+    if (!items.length) {
+        toaster.error(errors[0] || 'Paste at least one valid Messenger order item.');
+        return;
+    }
+
+    const parsedRows = items.map((item) => ({
+        ...newCustomItemRow(),
+        name: item.name,
+        unit: item.unit,
+        quantity: item.quantity,
+        sellingPrice: item.rate,
+    }));
+    const hasBlankInitialRow = customItemRows.value.length === 1 && !customItemRows.value[0].name.trim() && customItemRows.value[0].sellingPrice === '';
+    customItemRows.value = hasBlankInitialRow ? parsedRows : [...customItemRows.value, ...parsedRows];
+    toaster.success(`${items.length} item${items.length === 1 ? '' : 's'} added successfully.${errors.length ? ` ${errors.length} line${errors.length === 1 ? '' : 's'} could not be parsed.` : ''}`);
+    closeMessengerOrderModal();
+};
+
+const handleManualItemPaste = (event, index) => {
+    const pastedText = event.clipboardData?.getData('text') || '';
+    const { items } = parseMessengerOrder(pastedText);
+    if (!items.length) return;
+
+    event.preventDefault();
+    const [firstItem, ...remainingItems] = items;
+    Object.assign(customItemRows.value[index], {
+        name: firstItem.name,
+        unit: firstItem.unit,
+        quantity: firstItem.quantity,
+        sellingPrice: firstItem.rate,
+    });
+    if (remainingItems.length) {
+        customItemRows.value.splice(index + 1, 0, ...remainingItems.map((item) => ({
+            ...newCustomItemRow(), name: item.name, unit: item.unit, quantity: item.quantity, sellingPrice: item.rate,
+        })));
+    }
+    toaster.success(`${items.length} Messenger item${items.length === 1 ? '' : 's'} parsed.`);
+};
+
+const copyMessengerReply = async () => {
+    const message = formatMessengerOrder([
+        ...productList.value,
+        ...customItemRows.value.map((row) => ({
+            is_custom_item: Boolean(row.name.trim() && row.sellingPrice !== ''), name: row.name, quantity: row.quantity, unit_type: row.unit, unit_price: row.sellingPrice,
+        })),
+    ]);
+    if (!message) {
+        toaster.error('Add a manual item before copying a Messenger reply.');
+        return;
+    }
+    try {
+        await navigator.clipboard.writeText(message);
+        toaster.success('Messenger reply copied!');
+    } catch {
+        toaster.error('Unable to copy the Messenger reply.');
+    }
 };
 
 const customRowAmount = (row) => {
