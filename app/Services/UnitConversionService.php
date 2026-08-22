@@ -7,6 +7,8 @@ class UnitConversionService
     public const UNIT_KG = 'kg';
     public const UNIT_GM = 'gm';
     public const UNIT_PCS = 'pcs';
+    public const UNIT_L = 'l';
+    public const UNIT_ML = 'ml';
 
     public function normalizeUnitType(?string $unitType): string
     {
@@ -16,6 +18,8 @@ class UnitConversionService
             self::UNIT_KG, 'kilogram', 'kilo' => self::UNIT_KG,
             self::UNIT_GM, 'gram', 'grams' => self::UNIT_GM,
             self::UNIT_PCS, 'piece', 'pieces' => self::UNIT_PCS,
+            self::UNIT_L, 'liter', 'litre', 'liters', 'litres' => self::UNIT_L,
+            self::UNIT_ML, 'milliliter', 'millilitre', 'milliliters', 'millilitres' => self::UNIT_ML,
             default => self::UNIT_PCS,
         };
     }
@@ -37,7 +41,9 @@ class UnitConversionService
 
         return match ($unitType) {
             self::UNIT_KG => (int) round($quantity * 1000),
+            self::UNIT_L => (int) round($quantity * 1000),
             self::UNIT_GM => (int) round($quantity),
+            self::UNIT_ML => (int) round($quantity),
             self::UNIT_PCS => (int) round($quantity),
             default => (int) round($quantity),
         };
@@ -79,13 +85,28 @@ class UnitConversionService
             return rtrim(rtrim(number_format($kg, 3, '.', ''), '0'), '.') . ' KG';
         }
 
+        if ($unitType === self::UNIT_L) {
+            $litres = $baseQuantity / 1000;
+            return rtrim(rtrim(number_format($litres, 3, '.', ''), '0'), '.') . ' L';
+        }
+
+        if ($unitType === self::UNIT_ML) {
+            return rtrim(rtrim(number_format($baseQuantity, 0, '.', ''), '0'), '.') . ' ML';
+        }
+
         return rtrim(rtrim(number_format($baseQuantity, 0, '.', ''), '0'), '.') . ' GM';
     }
 
     public function formatPriceLabel(int|float|string $price, ?string $unitType): string
     {
         $unitType = $this->normalizeUnitType($unitType);
-        $suffix = $unitType === self::UNIT_PCS ? 'PCS' : ($unitType === self::UNIT_GM ? 'GM' : 'KG');
+        $suffix = match ($unitType) {
+            self::UNIT_PCS => 'PCS',
+            self::UNIT_GM => 'GM',
+            self::UNIT_L => 'L',
+            self::UNIT_ML => 'ML',
+            default => 'KG',
+        };
 
         return '৳' . number_format((float) $price, 2) . ' / ' . $suffix;
     }
@@ -109,7 +130,8 @@ class UnitConversionService
 
         return match ($unitType) {
             self::UNIT_KG => round($baseQuantity / 1000, 3),
-            self::UNIT_GM, self::UNIT_PCS => round($baseQuantity, 3),
+            self::UNIT_L => round($baseQuantity / 1000, 3),
+            self::UNIT_GM, self::UNIT_ML, self::UNIT_PCS => round($baseQuantity, 3),
             default => round($baseQuantity, 3),
         };
     }
@@ -130,6 +152,20 @@ class UnitConversionService
             return [
                 'quantity' => round($baseQuantity / 1000, 3),
                 'unit' => self::UNIT_KG,
+            ];
+        }
+
+        if ($unitType === self::UNIT_L) {
+            return [
+                'quantity' => round($baseQuantity / 1000, 3),
+                'unit' => self::UNIT_L,
+            ];
+        }
+
+        if ($unitType === self::UNIT_ML) {
+            return [
+                'quantity' => (int) round($baseQuantity),
+                'unit' => self::UNIT_ML,
             ];
         }
 
