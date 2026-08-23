@@ -259,6 +259,7 @@ class InvoiceController extends Controller
 
             $invoice->amount_paid = $invoice->payable;
             $invoice->balance_due = 0;
+            $invoice->payment_type = 'paid';
 
             $invoice->status = $status;
             $invoice->save();

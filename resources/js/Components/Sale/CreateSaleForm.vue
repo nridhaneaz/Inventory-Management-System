@@ -129,6 +129,7 @@
                                 <th class="px-3 py-3 text-left">Qty</th>
                                 <th class="px-3 py-3 text-left">Price</th>
                                 <th class="px-3 py-3 text-left">Amount</th>
+                                <th class="px-3 py-3 text-left">Profit</th>
                                 <th class="px-3 py-3 text-left">Action</th>
                             </tr>
                         </thead>
@@ -150,6 +151,7 @@
                                 </td>
                                 <td class="px-3 py-3">{{ priceLabel(product) }}</td>
                                 <td class="px-3 py-3">{{ currency(product.subtotal) }}</td>
+                                <td class="px-3 py-3 font-semibold text-emerald-700">{{ productProfit(product) === null ? '—' : currency(productProfit(product)) }}</td>
                                 <td class="px-3 py-3">
                                     <button type="button" class="pos-button-danger px-2 py-1 text-xs" @click="removeProduct(index)">
                                         Remove
@@ -157,7 +159,7 @@
                                 </td>
                             </tr>
                             <tr v-if="productList.length === 0">
-                                <td colspan="7" class="px-3 py-10 text-center text-slate-500">No products in cart.</td>
+                                <td colspan="8" class="px-3 py-10 text-center text-slate-500">No products in cart.</td>
                             </tr>
                         </tbody>
                     </table>
@@ -165,6 +167,7 @@
 
                 <div class="mt-5 grid gap-3 rounded-3xl border border-slate-200 bg-white p-4 text-sm">
                     <div class="flex justify-between"><span class="text-slate-500">Subtotal</span><span class="font-semibold">{{ currency(calculate.subtotal) }}</span></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Profit</span><span class="font-semibold text-emerald-700">{{ currency(calculate.profit) }}</span></div>
 
                     <label class="grid gap-2">
                         <span class="font-medium text-slate-700">Delivery Charge</span>
@@ -267,8 +270,8 @@
         </div>
 
         <!-- Manual Cash Memo Items Modal -->
-        <div v-if="showCustomItemModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-            <div class="max-h-[calc(100vh-2rem)] w-full max-w-7xl overflow-y-auto rounded-[28px] border border-white/60 bg-white p-5 shadow-xl">
+        <div v-if="showCustomItemModal" class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/60 p-4 backdrop-blur-sm">
+            <div class="my-0 h-[calc(100vh-2rem)] w-full max-w-7xl overflow-y-auto overscroll-contain rounded-[28px] border border-white/60 bg-white p-5 shadow-xl">
                 <h3 class="text-xl font-bold text-slate-900">Manual Cash Memo Items</h3>
                 <p class="mt-1 text-sm text-slate-500">Type as many one-time items as needed. These rows are saved with this sale only and do not affect inventory stock.</p>
 
@@ -283,9 +286,9 @@
                             Copy Messenger Reply
                         </button>
                     </div>
-                    <div class="overflow-x-auto rounded-2xl border border-slate-200">
+                    <div class="manual-items-table-wrap max-h-[calc(100vh-15rem)] overflow-auto rounded-2xl border border-slate-200">
                         <table class="min-w-[1140px] w-full text-sm">
-                            <thead class="bg-slate-50 text-slate-700">
+                            <thead class="manual-items-table-head bg-slate-50 text-slate-700 shadow-sm">
                                 <tr>
                                     <th class="px-2 py-3 text-left">No</th>
                                     <th class="px-2 py-3 text-left">Description / Item Name *</th>
@@ -359,6 +362,28 @@
             <div class="my-4 w-full max-w-4xl rounded-[28px] border border-white/60 bg-white p-4 md:p-6 print-modal__content">
                 <CashMemo :invoice="completedInvoice" :business="business" print-id="sale-cash-memo-print" />
 
+                <div class="no-print mt-5 grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:grid-cols-2">
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Print Format</label>
+                        <select v-model="printFormat" class="pos-input w-full">
+                            <option value="auto">Auto</option>
+                            <option value="half">Half A4</option>
+                            <option value="full">Full A4</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="mb-1 block text-sm font-semibold text-slate-700">Orientation</label>
+                        <select v-model="printOrientation" class="pos-input w-full">
+                            <option value="portrait">Portrait</option>
+                            <option value="landscape">Landscape</option>
+                        </select>
+                    </div>
+                    <p class="text-sm text-slate-600 sm:col-span-2">
+                        <template v-if="autoOverflowed">{{ completedProductCount }} products -&gt; Full A4 (content exceeds Half A4 height)</template>
+                        <template v-else>{{ completedProductCount }} products -&gt; {{ selectedPrintFormat === 'half' ? 'Half A4' : 'Full A4' }}</template>
+                    </p>
+                </div>
+
                 <div class="mt-5 flex justify-end gap-3 no-print">
                     <button type="button" class="pos-button-neutral" @click="closeInvoicePreview">Close</button>
                     <button type="button" class="pos-button-primary" @click="printInvoice">Print Cash Memo</button>
@@ -374,7 +399,7 @@ import { usePage } from '@inertiajs/vue3';
 import { createToaster } from '@meforma/vue-toaster';
 import axios from '../../bootstrap';
 import CashMemo from '../Invoice/CashMemo.vue';
-import { printCashMemo } from '../../utils/printCashMemo';
+import { printCashMemo, resolvePrintFormat } from '../../utils/printCashMemo';
 import { formatMessengerOrder, parseMessengerOrder } from '../../utils/messengerOrderParser';
 
 const page = usePage();
@@ -397,6 +422,11 @@ const showCustomItemModal = ref(false);
 const showMessengerOrderModal = ref(false);
 const showInvoicePreview = ref(false);
 const completedInvoice = ref(null);
+const printFormat = ref(localStorage.getItem('invoice_print_format') || 'auto');
+const printOrientation = ref(localStorage.getItem('invoice_print_orientation') || 'portrait');
+const autoOverflowed = ref(false);
+const completedProductCount = computed(() => completedInvoice.value?.invoice_products?.length || 0);
+const selectedPrintFormat = computed(() => resolvePrintFormat(completedProductCount.value, printFormat.value));
 const messengerOrderText = ref('');
 const messengerOrderPreview = ref({ items: [], errors: [] });
 
@@ -432,6 +462,7 @@ const customItemRows = ref([newCustomItemRow()]);
 
 const calculate = reactive({
     subtotal: 0,
+    profit: 0,
     deliveryCharge: 0,
     discountP: 0,
     discount: 0,
@@ -454,6 +485,16 @@ const unitLabel = (unitType) => {
 const quantityMin = (unitType) => (unitType === 'pcs' ? '1' : '0.001');
 const priceLabel = (product) => `৳${Number(product.unit_price || product.price || 0).toFixed(2)} / ${unitLabel(product.unit_type)}`;
 const currency = (value) => `৳${Number(value || 0).toFixed(2)}`;
+const productProfit = (product) => {
+    const purchasePrice = product.is_custom_item ? product.cost_price : product.purchase_price;
+    if (purchasePrice === null || purchasePrice === undefined || purchasePrice === '') return null;
+    const quantity = parseQuantity(product.quantity);
+    const sellingPrice = Number(product.unit_price || product.price || 0);
+    const costPrice = Number(purchasePrice);
+    return quantity !== null && quantity > 0 && Number.isFinite(costPrice) && costPrice > 0
+        ? (sellingPrice - costPrice) * quantity
+        : null;
+};
 
 const filteredCustomers = computed(() => {
     const query = customerSearch.value.trim().toLowerCase();
@@ -559,6 +600,7 @@ const addProduct = (product) => {
         quantity: '',
         stock_quantity: Number(product.stock_quantity || product.unit || 0),
         unit_price: Number(product.price || 0),
+        purchase_price: product.purchase_price,
         subtotal: 0,
     });
 };
@@ -811,13 +853,16 @@ const isValidLineQuantity = (product) => {
 
 const calculateTotal = () => {
     let subtotal = 0;
+    let profit = 0;
     productList.value.forEach((product) => {
         subtotal += parseFloat(product.subtotal || 0);
+        profit += Number(productProfit(product) || 0);
     });
 
     const deliveryCharge = parseFloat(calculate.deliveryCharge || 0);
 
     calculate.subtotal = subtotal.toFixed(2);
+    calculate.profit = profit.toFixed(2);
     calculate.discount = ((subtotal * parseFloat(calculate.discountP || 0)) / 100).toFixed(2);
     const afterDiscount = subtotal - parseFloat(calculate.discount);
     calculate.vat = ((afterDiscount * parseFloat(calculate.vatP || 0)) / 100).toFixed(2);
@@ -979,13 +1024,38 @@ const closeInvoicePreview = () => {
 };
 
 const printInvoice = () => {
-    if (!printCashMemo('sale-cash-memo-print')) {
+    autoOverflowed.value = false;
+    localStorage.setItem('invoice_print_format', printFormat.value);
+    localStorage.setItem('invoice_print_orientation', printOrientation.value);
+    if (!printCashMemo('sale-cash-memo-print', {
+        format: printFormat.value,
+        orientation: printOrientation.value,
+        onAutoUpgrade: () => { autoOverflowed.value = true; },
+        onOverflow: () => toaster.error('This invoice does not fit in Half A4. Choose Auto or Full A4 to print without cutting content.'),
+    })) {
         toaster.error('Unable to open print window.');
     }
 };
 </script>
 
 <style>
+.manual-items-table-wrap {
+    overflow-y: clip;
+}
+
+.manual-items-table-head {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+}
+
+.manual-items-table-head th {
+    position: sticky;
+    top: 0;
+    z-index: 21;
+    background: #f8fafc;
+}
+
 @media print {
     body * {
         visibility: hidden;

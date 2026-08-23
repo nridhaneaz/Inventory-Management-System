@@ -21,6 +21,7 @@ const markInvoicePaid = (invoice) => {
                 target.status = nextStatus;
                 target.amount_paid = Number(invoice.payable || 0);
                 target.balance_due = 0;
+                target.payment_type = nextStatus;
             }
         },
     });
